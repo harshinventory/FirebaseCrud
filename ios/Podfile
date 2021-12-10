@@ -16,7 +16,9 @@ target 'FirebaseCrud' do
     inherit! :complete
     # Pods for testing
   end
-
+  pod 'Firebase/Analytics'
+  pod 'Firebase/Auth'
+  pod 'Firebase/Firestore'
   # Enables Flipper.
   #
   # Note that if you have use_frameworks! enabled, Flipper will not work and

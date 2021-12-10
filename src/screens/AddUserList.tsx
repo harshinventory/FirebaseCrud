@@ -4,7 +4,7 @@ import {StyleSheet, Text, View} from 'react-native';
 const AddUserList = () => {
   return (
     <View>
-      <Text>Add user list</Text>
+      <Text>React native add user list</Text>
     </View>
   );
 };
