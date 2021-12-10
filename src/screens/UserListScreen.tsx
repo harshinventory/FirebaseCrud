@@ -5,26 +5,35 @@ interface Props {}
 
 const UserListScreen = (props: Props) => {
   const [data, setData] = useState([]);
-  useEffect(() => {
-    const getColllectionData = async () => {
-      const user = await firestore().collection('users').doc('test2').get();
-      console.log(user);
-      setData(user);
-    };
-    getColllectionData();
-    return () => {};
-  }, []);
+
+  const getColllectionData = async () => {
+
+    const user = await firestore().collection('users').doc('test2').get();
+    setData(user);
+    firestore()
+      .collection('users')
+      .doc('test2')
+      .set({
+        name: 'parmar this',
+        age: 80,
+      })
+      .then(() => {
+        console.log('User added!');
+      });
+  };
 
   return (
     <View>
-      <Text>{data?._data?.email}</Text>
+      <Text>{data?._data?.name}</Text>
       <Button
         title="Go to Edit"
         onPress={() => props.navigation.navigate('EditUserListScreen')}
       />
       <Button
         title="Go to Add"
-        onPress={() => props.navigation.navigate('AddUserList')}
+        onPress={() => {
+          getColllectionData();
+        }}
       />
     </View>
   );
