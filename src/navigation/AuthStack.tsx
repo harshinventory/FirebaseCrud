@@ -1,18 +1,26 @@
 import * as React from 'react';
 
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import UserListScreen from '../screens/UserListScreen';
-import EditUserListScreen from '../screens/EditUserListScreen';
-import AddUserList from '../screens/AddUserList';
+import LoginScreen from '../screens/LoginScreen';
+import ChatScreen from '../screens/ChatScreen';
+import GroupScreen from '../screens/GroupScreen';
 
 const Stack = createNativeStackNavigator();
 
 const AuthStack = () => {
   return (
     <Stack.Navigator>
-      <Stack.Screen name="UserListScreen" component={UserListScreen} />
-      <Stack.Screen name="EditUserListScreen" component={EditUserListScreen} />
-      <Stack.Screen name="AddUserList" component={AddUserList} />
+      <Stack.Screen name="LoginScreen" component={LoginScreen} />
+      <Stack.Screen
+        name="ChatScreen"
+        component={ChatScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name="GroupScreen"
+        component={GroupScreen}
+        options={{headerShown: false}}
+      />
     </Stack.Navigator>
   );
 };
