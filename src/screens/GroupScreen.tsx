@@ -1,7 +1,6 @@
 import {firebase} from '@react-native-firebase/firestore';
 import React, {useEffect, useState} from 'react';
 import {
-  Button,
   FlatList,
   Image,
   KeyboardAvoidingView,
@@ -14,19 +13,32 @@ import {
 } from 'react-native';
 
 const GroupScreen = () => {
+  const userId = 'WLTDLWFHpGMnLWLROyYO';
+  const groupId = 'gpMrYUpR5Cqe7fRCYxWE';
+
   const [groupData, setGroupData] = useState([]);
   const [nameAddress, setNameAddress] = useState('');
-  const [names, setNames] = useState([]);
-  const [chatData, setChatData] = useState([]);
-  console.log('group data', groupData);
-  console.log('names', names);
+  const [chatData, setChatData] = useState<any>([]);
   useEffect(() => {
-    GroupData();
-    findName();
-  }, []);
+    if (nameAddress.length < 1) {
+      getMsg();
+    }
+  }, [nameAddress]);
 
-  const renderDate = (date: Date) => {
-    return <Text style={styles.time}>{date}</Text>;
+  const getMsg = async () => {
+    const res = await firebase
+      .firestore()
+      .collection('chat')
+      .where('group_id', '==', 'gpMrYUpR5Cqe7fRCYxWE')
+      .get();
+    console.log('res >>> ', res);
+
+    let data = res.docs.map(val => {
+      val.data().id = val.id;
+      return val.data();
+    });
+    console.log('data >>>> ', data);
+    setChatData(data);
   };
 
   const GroupData = async () => {
@@ -35,44 +47,63 @@ const GroupScreen = () => {
     setGroupData(groupData?.members);
   };
 
-  const findName = async () => {
-    console.log('groupData >>>> ', groupData);
-    const res = await firebase
-      .firestore()
-      .collection('users')
-      .where(firebase.firestore.FieldPath.documentId(), 'in', groupData)
-      .get();
-    console.log('res >> ', res);
-    let userNames = res.docs.map(val => {
-      val.data().id = val.id;
-      return val.data();
+  const onPressSend = async () => {
+    await firebase.firestore().collection('chat').add({
+      group_id: groupId,
+      latest_timestamp: Date.now(),
+      message: nameAddress,
+      message_type: 'text',
+      sender_id: userId,
     });
-    console.log('userNames >>>> ', userNames);
-    setNames(userNames);
+    setNameAddress('');
   };
 
   const chat = async () => {
-    const res = await firebase.firestore().collection('chat').get();
-    const chat = res.docs.forEach(item => {
-      const itemdata = item.data();
-      console.log(itemdata);
-      chatData.push(...chatData, itemdata);
-    });
+    const res = await firebase
+      .firestore()
+      .collection('chat')
+      .where('group_id', '==', 'gpMrYUpR5Cqe7fRCYxWE')
+      .get();
+    // const chat = res.docs.forEach(item => {
+    //   let itemdata.id = item.id;
+    //    itemdata = item.data();
+    //   chatData.push(itemdata);
+    // });
+    console.log('res >>> ', res);
 
-    // console.log(
-    //   'res chat app',
-    //   (await res.get()).forEach(item => {
-    //     console.log(item.data());
-    //   }),
-    // );
+    let data = res.docs.map(val => {
+      val.data().id = val.id;
+      return val.data();
+    });
+    console.log('data >>>> ', data);
+    setChatData(data);
   };
 
-  const renderItem = ({item, index}) => {
-    return (
-      <View>
-        <Text>{(item.message)}</Text>
-      </View>
-    );
+  const renderItem = ({item, index}: any) => {
+    console.log(item);
+    if (userId === item.sender_id) {
+      return (
+        <View style={styles.rightSideMsg}>
+          <Text>{item.message}</Text>
+        </View>
+      );
+    } else if (userId !== item.sender_id) {
+      return (
+        <View style={styles.leftSideMsg}>
+          <Text>{item.message}</Text>
+        </View>
+      );
+    }
+    // return (
+    //   <View>
+    //     {userId === item.sender_id ? (
+
+    //     ) : (
+
+    //     )}
+    //     <Text>{item.message}</Text>
+    //   </View>
+    // );
   };
 
   return (
@@ -81,20 +112,11 @@ const GroupScreen = () => {
         <SafeAreaView style={styles.container}>
           <FlatList
             style={styles.list}
+            inverted
             data={chatData}
-            keyExtractor={item => {
-              return item;
-            }}
+            keyExtractor={(item, index) => index.toString()}
             renderItem={renderItem}
           />
-          <View>
-            <TouchableOpacity
-              onPress={() => {
-                chat();
-              }}>
-              <Text>Res in chat</Text>
-            </TouchableOpacity>
-          </View>
         </SafeAreaView>
         <View style={styles.footer}>
           <View style={styles.inputContainer}>
@@ -102,13 +124,15 @@ const GroupScreen = () => {
               style={styles.inputs}
               placeholder="Write a message..."
               underlineColorAndroid="transparent"
+              value={nameAddress}
               onChangeText={(name_address: string) =>
                 setNameAddress(name_address)
               }
             />
           </View>
-
-          <TouchableOpacity style={styles.btnSend}>
+          <TouchableOpacity
+            style={styles.btnSend}
+            onPress={() => onPressSend()}>
             <Image
               source={{
                 uri: 'https://img.icons8.com/small/75/ffffff/filled-sent.png',
@@ -189,13 +213,28 @@ const styles = StyleSheet.create({
     color: '#808080',
   },
   item: {
-    // flex: 1,
     marginVertical: 2,
     justifyContent: 'flex-end',
     flexDirection: 'row',
     backgroundColor: 'white',
-
-    // borderRadius: 300,
-    // padding: 5,
+  },
+  rightSideMsg: {
+    flex: 1,
+    backgroundColor: 'lightgreen',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+    alignSelf: 'flex-end',
+    marginVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 4,
+  },
+  leftSideMsg: {
+    flex: 1,
+    backgroundColor: 'white',
+    marginVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 4,
   },
 });
