@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   StatusBar,
 } from 'react-native';
-import auth from '@react-native-firebase/auth';
+import auth, {firebase} from '@react-native-firebase/auth';
 import {useNavigation} from '@react-navigation/native';
 
 export default function App() {
@@ -29,6 +29,11 @@ export default function App() {
             auth()
               .signInWithEmailAndPassword(email, password)
               .then(res => {
+                if (res.user.uid !== null && res.user?.email !== email) {
+                  firebase.firestore().collection('user').add({
+                    // email: res.user mn
+                  });
+                }
                 console.log('LOGIN >>> ', res);
                 navigation.navigate('GroupScreen');
               });

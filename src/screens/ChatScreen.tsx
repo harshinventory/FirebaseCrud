@@ -1,102 +1,240 @@
-import auth from '@react-native-firebase/auth';
-import {useNavigation} from '@react-navigation/native';
-import React, {useState} from 'react';
+import {firebase} from '@react-native-firebase/firestore';
+import React, {useEffect, useState} from 'react';
 import {
-  Alert,
-  Button,
+  FlatList,
+  Image,
   KeyboardAvoidingView,
+  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
-import MsgBar from '../components/Msgbar';
 
-const ChatScreen = props => {
-  const [currentMsg, setCurrentMsg] = useState('');
-  const navigation = useNavigation();
+const ChatScreen = () => {
+  const userId = 'WLTDLWFHpGMnLWLROyYO';
+  const groupId = 'gpMrYUpR5Cqe7fRCYxWE';
 
-  console.log('prosp in chatscreen', props);
+  const [groupData, setGroupData] = useState([]);
+  const [nameAddress, setNameAddress] = useState('');
+  const [chatData, setChatData] = useState<any>([]);
+  useEffect(() => {
+    if (nameAddress.length < 1) {
+      getMsg();
+    }
+  }, [nameAddress]);
 
-  const onPressSend = () => {};
+  const getMsg = async () => {
+    const res = await firebase
+      .firestore()
+      .collection('chat')
+      .where('group_id', '==', 'gpMrYUpR5Cqe7fRCYxWE')
+      .get();
+    console.log('res >>> ', res);
+
+    let data = res.docs.map(val => {
+      val.data().id = val.id;
+      return val.data();
+    });
+    console.log('data >>>> ', data);
+    setChatData(data);
+  };
+
+  const GroupData = async () => {
+    const group = await firebase.firestore().collection('group').get();
+    const groupData = group.docs[0].data();
+    setGroupData(groupData?.members);
+  };
+
+  const onPressSend = async () => {
+    await firebase.firestore().collection('chat').add({
+      group_id: groupId,
+      latest_timestamp: Date.now(),
+      message: nameAddress,
+      message_type: 'text',
+      sender_id: userId,
+    });
+    setNameAddress('');
+  };
+
+  const chat = async () => {
+    const res = await firebase
+      .firestore()
+      .collection('chat')
+      .where('group_id', '==', 'gpMrYUpR5Cqe7fRCYxWE')
+      .get();
+    // const chat = res.docs.forEach(item => {
+    //   let itemdata.id = item.id;
+    //    itemdata = item.data();
+    //   chatData.push(itemdata);
+    // });
+    console.log('res >>> ', res);
+
+    let data = res.docs.map(val => {
+      val.data().id = val.id;
+      return val.data();
+    });
+    console.log('data >>>> ', data);
+    setChatData(data);
+  };
+
+  const renderItem = ({item, index}: any) => {
+    console.log(item);
+    if (userId === item.sender_id) {
+      return (
+        <View style={styles.rightSideMsg}>
+          <Text>{item.message}</Text>
+        </View>
+      );
+    } else if (userId !== item.sender_id) {
+      return (
+        <View style={styles.leftSideMsg}>
+          <Text>{item.message}</Text>
+        </View>
+      );
+    }
+    // return (
+    //   <View>
+    //     {userId === item.sender_id ? (
+
+    //     ) : (
+
+    //     )}
+    //     <Text>{item.message}</Text>
+    //   </View>
+    // );
+  };
+
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-      }}>
-      <View style={styles.logoutBtn}>
-        <Text>{auth().currentUser?.email}</Text>
-        <Button
-          title="Log Out"
-          onPress={() => {
-            auth()
-              .signOut()
-              .then(() => {
-                navigation.navigate('LoginScreen');
-              })
-              .then(error => {
-                console.log(error);
-              });
-          }}
-        />
-      </View>
-      <KeyboardAvoidingView style={styles.bottom} behavior="padding">
-        <View style={styles.container}>
-          <TextInput
-            style={styles.textInput}
-            underlineColorAndroid={'transparent'}
-            onChangeText={text => setCurrentMsg(text)}
-            value={currentMsg}
-            placeholder={'Type here..'}
+    <KeyboardAvoidingView behavior="padding" style={styles.container}>
+      <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
+          <FlatList
+            style={styles.list}
+            inverted
+            data={chatData}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={renderItem}
           />
+        </SafeAreaView>
+        <View style={styles.footer}>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.inputs}
+              placeholder="Write a message..."
+              underlineColorAndroid="transparent"
+              value={nameAddress}
+              onChangeText={(name_address: string) =>
+                setNameAddress(name_address)
+              }
+            />
+          </View>
           <TouchableOpacity
-            style={styles.sendIcon}
-            onPress={() => {
-              onPressSend();
-            }}>
-            <Text>Send</Text>
+            style={styles.btnSend}
+            onPress={() => onPressSend()}>
+            <Image
+              source={{
+                uri: 'https://img.icons8.com/small/75/ffffff/filled-sent.png',
+              }}
+              style={styles.iconSend}
+            />
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 
 export default ChatScreen;
 
 const styles = StyleSheet.create({
-  bottom: {
-    justifyContent: 'flex-end',
-    flex: 1,
-    marginBottom: 20,
-  },
-  logoutBtn: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginHorizontal: 24,
-  },
   container: {
+    flex: 1,
+  },
+  list: {
+    paddingHorizontal: 5,
+  },
+  footer: {
     flexDirection: 'row',
-    borderWidth: 1,
-
-    borderRadius: 100,
-    elevation: 2,
-
-    margin: 8,
+    height: 60,
+    backgroundColor: '#eeeeee',
+    paddingHorizontal: 10,
+    padding: 5,
   },
-  textInput: {
-    flexGrow: 1,
-    padding: 8,
-    paddingLeft: 16,
-    paddingRight: 16,
+  btnSend: {
+    backgroundColor: '#00BFFF',
+    width: 40,
+    height: 40,
+    borderRadius: 360,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  sendIcon: {
+  iconSend: {
+    width: 30,
+    height: 30,
+    alignSelf: 'center',
+  },
+  inputContainer: {
+    borderBottomColor: '#F5FCFF',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 30,
+    borderBottomWidth: 1,
+    height: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 10,
+  },
+  inputs: {
+    height: 40,
+    marginLeft: 16,
+    borderBottomColor: '#FFFFFF',
+    flex: 1,
+  },
+  balloon: {
+    maxWidth: 250,
+    padding: 4,
+    borderRadius: 20,
+  },
+  itemIn: {
+    alignSelf: 'flex-start',
+    borderRadius: 10,
+  },
+  itemOut: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#34B7F1',
+    borderRadius: 10,
+  },
+  time: {
+    alignSelf: 'flex-end',
     margin: 4,
-    borderRadius: 100,
-
-    padding: 8,
+    fontSize: 12,
+    color: '#808080',
+  },
+  item: {
+    marginVertical: 2,
+    justifyContent: 'flex-end',
+    flexDirection: 'row',
+    backgroundColor: 'white',
+  },
+  rightSideMsg: {
+    flex: 1,
+    backgroundColor: 'lightgreen',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+    alignSelf: 'flex-end',
+    marginVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 4,
+  },
+  leftSideMsg: {
+    flex: 1,
+    backgroundColor: 'white',
+    marginVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    padding: 4,
   },
 });
